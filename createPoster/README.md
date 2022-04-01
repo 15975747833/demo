@@ -6,11 +6,15 @@
   2. 通过html2canvas插件，传入需要转化成canvas的dom节点，该方法会返回一个promise包裹的canvas对象，将canvas转化成DataURL，通过img.src属性将海报加载出来。
 
 方案比较：
+
 方案1：需要将页面结构用canvas绘制出来，使用canvas绘制页面难度较大且后期不方便维护
+
 方案2：使用html2canvas开源库，在github上有进行维护，并且只需要简单的配置，即可返回promise包裹的canvas
+
 综上：方案2是较优的方案。
 ## 前置知识
 在生成海报前，需要了解这几个前置知识，DataURL、File对象、Blob对象、base64对象
+
   DataURL: 是data类型的url，可以将数据直接嵌入到网页中(base64)
 
   Blob对象：是文件对象 他的数据可以用base64、流的形式进行读取
@@ -108,6 +112,13 @@ function readAsDataURL (file, cb) {
 
 ## 实现
   根据业务需求，生成的还要是在一个列表中生成的，点击对应的按钮会弹出弹框 展示对应的海报。弹框的实现使用react-dom的 protal 来生成，然后在弹框中绘制海报。
+
+  html2canvas实现：
+  1. 在 protal 中画出需要渲染的页面
+  2. 调用html2canvas插件并传入配置，返回一个promise包裹的canvas，使用canvas.toDataURL将海报变成dataURL，需要保存，将dataURL转化成blob/File传给服务器保存；否则直接将dataURL直接放到image.src中显示
+
+  canvas原生实现
+
   1. 生成canvas元素，获取canvas上下文
   2. 设置canvas的大小，画出矩形用来放置海报的背景图片
   3. 加载背景图片并渲染在canvas中(ctx.drawImage)，生成文字(ctx.fillText)
@@ -116,10 +127,11 @@ function readAsDataURL (file, cb) {
 
 ### 注意点(坑点)
 1. canvas生成图片清晰度优化方案
-  > canvas在浏览器中的渲染过程
   > 绘制过程：canvas在绘制缓存区按照绘制缓存区比例将图片进行放大。例如绘制缓存区比例为1，canvas原大小为100*100，则在缓存区中的大小为100*100
+
   > 渲染过程：渲染时，根据设备像素比(假如是2)，将缓存区中的图片尺寸乘以设备摄像比再渲染到页面上，所以在设备上的大小为200*200，原因是，将原来的图片放大了2倍再渲染到浏览器上是导致模糊的原因
-  > 解决方案：将canvas的大小放大设备像素比倍(dpr),然后等绘制完成后，将canvas的大小缩小为1/drp倍
+
+  > 解决方案：将canvas的大小(画布大小以及canvas元素的大小)放大设备像素比倍(dpr),然后等绘制完成后，将canvas的大小(canvas元素css尺寸)缩小为1/drp倍
 
 2. canvas关闭默认抗锯齿设置(ImageSmoothingEnabled)
 3. 含有跨域图片的配置 开启html2canvas配置 {useCORS: true}，允许跨域
