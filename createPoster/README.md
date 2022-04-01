@@ -1,10 +1,14 @@
 # 生成海报
-今天接到一个需求，在pc端的竞价页面，需要生成一张海报，扫描里面的二维码需要跳转到小程序端的明细页面，由于项目时间太紧，采用了html2canvas插件的方式来实现，通过原生canvas的实现方案就没时间实现，但是在闲暇的时候，我实现了原生canvas的方案。
+今天接到一个需求，在pc端的竞价页面，需要生成一张海报，扫描里面的二维码需要跳转到小程序端的明细页面，由于项目时间太紧，采用了html2canvas插件的方式来实现，通过原生canvas的实现方案就没时间实现，在实现的时候记录了一些需要注意的地方。
 
 ## 生成海报有两种方式
-  1. 通过canvas直接绘画出来，将canvas对象转成url，通过canvas.toDataURL转化，最后通过img.src属性将海报加载出来。
-  2. 通过html2canvas插件，传入需要转化成canvas的dom节点，该方法会返回一个canvas对象，将canvas转化成url，通过img.src属性将海报加载出来。
+  1. 通过canvas直接把结构画出来，然后调用canvas.toDataURL方法，将canvas对象转化成DataURL，然后输出到image中显示。
+  2. 通过html2canvas插件，传入需要转化成canvas的dom节点，该方法会返回一个promise包裹的canvas对象，将canvas转化成DataURL，通过img.src属性将海报加载出来。
 
+方案比较：
+方案1：需要将页面结构用canvas绘制出来，使用canvas绘制页面难度较大且后期不方便维护
+方案2：使用html2canvas开源库，在github上有进行维护，并且只需要简单的配置，即可返回promise包裹的canvas
+综上：方案2是较优的方案。
 ## 前置知识
 在生成海报前，需要了解这几个前置知识，DataURL、File对象、Blob对象、base64对象
   DataURL: 是data类型的url，可以将数据直接嵌入到网页中(base64)
@@ -107,8 +111,22 @@ function readAsDataURL (file, cb) {
   1. 生成canvas元素，获取canvas上下文
   2. 设置canvas的大小，画出矩形用来放置海报的背景图片
   3. 加载背景图片并渲染在canvas中(ctx.drawImage)，生成文字(ctx.fillText)
-  4. 使用qrcodejs库来生成二维码，将二维码插入到海报中(ctx.drawImage)
+  4. 使用qrcodejs2库来生成二维码，将二维码插入到海报中(ctx.drawImage)
   5. 如果还需要对海报进行保存，最后将canvas转化成dataUR或objectURL，提交给后端
+
+### 注意点(坑点)
+1. canvas生成图片清晰度优化方案
+  > canvas在浏览器中的渲染过程
+  > 绘制过程：canvas在绘制缓存区按照绘制缓存区比例将图片进行放大。例如绘制缓存区比例为1，canvas原大小为100*100，则在缓存区中的大小为100*100
+  > 渲染过程：渲染时，根据设备像素比(假如是2)，将缓存区中的图片尺寸乘以设备摄像比再渲染到页面上，所以在设备上的大小为200*200，原因是，将原来的图片放大了2倍再渲染到浏览器上是导致模糊的原因
+  > 解决方案：将canvas的大小放大设备像素比倍(dpr),然后等绘制完成后，将canvas的大小缩小为1/drp倍
+
+2. canvas关闭默认抗锯齿设置(ImageSmoothingEnabled)
+3. 含有跨域图片的配置 开启html2canvas配置 {useCORS: true}，允许跨域
+3. canvas合成的性能问题？？
 
 ## 生成海报的性能问题
 <!-- todo -->
+
+
+参考地址：https://segmentfault.com/a/1190000011478657
