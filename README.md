@@ -401,7 +401,75 @@ promise.allSettled: 将所有的promise结果都返回，即使返回有部分�
 
 
 ### 跨域
+#### 同源策略
+同源策略是一个浏览器的安全策略，限制一个源的文档/脚本 和 其他源的文档/脚本进行交互的方式。同源意味着协议、域名、端口必须一致。
+
+限制：不是同源的文档，没有权限去操作另一个源的文档。例如 DOM、cookie、Ajax等
 #### 常见的跨域解决方式？
+`jsonp:` 通过script标签的异步加载来实现、script标签不受同源策略的限制，只支持GET请求
+```js
+// 通过动态生成script标签，插入文档中，待script标签加载完毕后，执行回调函数获取结果
+const script = document.createElement('script');
+script.src = 'http:xxx.com?callback=jsonp';
+document.appendChild(script);
+
+function jsonp (res) {
+    // 调用回调函数获取结果
+    console.log('res', res);
+}
+```
+
+`hash:` url上#后的内容发生变化，页面是不会跳转的，可以监听hash变化来进行跨域
+
+```js
+var B = document.getElementsByTagName('iframe');
+B.src = B.src + '#' + 'data';
+
+// 在B中的伪代码如下
+window.onhashchange = function () {
+  var data = window.location.hash;
+};
+```
+
+`postMessage:` H5新增的方法，可以支持跨域通讯
+
+用法：postMessage(data, origin) data为传输的数据，origin为传输的目标地址
+
+```js
+// 在A.html中
+var iframeA = document.getElementsByTagName('iframe');
+iframeA.contentWindow.postMessage(data, 'http://www.domain2.com')
+
+// 在B.html中
+window.addEventListener('message', function (data) {
+    // 传输过来的data
+})
+```
+
+`nginx代理跨域:` 同源策略的限制只是针对浏览器，对于服务端来说，只是调用http协议，并不存在跨域，使用ng配置一个代理服务器，
+域名和需要请求的域名一致，端口不同，作为跳板机，然后配置反向代理，实现跨域访问
+
+```js
+// nginx.config.js
+server {
+    listen 81;
+    server_name domain1.com;
+    location / {
+        proxy_pass domain1.com; // 反向代理
+    }
+}
+```
+
+`CORS:` 跨域资源共享。通过在header上设置Access-Allow-Control-Origin头字段，告诉浏览器允许被跨域请求的资源。跨域资源请求有两种情况，简单请求和非简单请求。对于简答请求，直接发送HTTP请求，在响应时，返回access-allow-control-origin:origin(请求的源的域名)有值，则表示跨域成功。对于非简单请求，在发送HTTP请求前，需要进行预检请求，获取服务端支持的请求类型，在响应时，返回的access-allow-control-origin有值，则表示跨域成功。
+> 有个注意的点，跨域资源默认是不会自动带上cookie，需要在请求时设置withCredentials为true
+```js
+// 请求时
+axios.defaults.withCredentials = true;
+// 服务端
+Access-Control-Allow-Credentials : true
+Access-Control-Allow-origin: xxx; 允许跨域的源
+
+```
 
 ### Vue与React的比较
 #### Vue与React框架有什么相同和不同的地方吗？
